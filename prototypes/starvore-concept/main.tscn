@@ -1,0 +1,138 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://main.gd" id="1"]
+[ext_resource type="Script" path="res://player.gd" id="2"]
+[ext_resource type="Script" path="res://spawner.gd" id="3"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 20.0
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 1080.0
+offset_bottom = 1920.0
+color = Color(0.02, 0.02, 0.08, 1)
+
+[node name="Player" type="Area2D" parent="."]
+position = Vector2(540, 960)
+script = ExtResource("2")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Player"]
+shape = SubResource("CircleShape2D_1")
+
+[node name="Visual" type="Node2D" parent="Player"]
+
+[node name="Spawner" type="Node2D" parent="."]
+script = ExtResource("3")
+
+[node name="UI" type="CanvasLayer" parent="."]
+
+[node name="StageLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 400.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 28
+text = "尘埃"
+
+[node name="ProgressLabel" type="Label" parent="UI"]
+offset_left = 20.0
+offset_top = 60.0
+offset_right = 200.0
+offset_bottom = 90.0
+theme_override_font_sizes/font_size = 20
+text = "0%"
+
+[node name="WinPanel" type="ColorRect" parent="UI"]
+process_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+visible = false
+
+[node name="WinLabel" type="Label" parent="UI/WinPanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.4
+anchor_right = 0.5
+anchor_bottom = 0.4
+offset_left = -250.0
+offset_top = -50.0
+offset_right = 250.0
+offset_bottom = 50.0
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 40
+text = "你已成为黑洞
+吞噬一切的存在"
+
+[node name="RestartButton" type="Button" parent="UI/WinPanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.55
+anchor_right = 0.5
+anchor_bottom = 0.55
+offset_left = -100.0
+offset_top = -25.0
+offset_right = 100.0
+offset_bottom = 25.0
+theme_override_font_sizes/font_size = 22
+text = "再来一次"
+
+[node name="DeathPanel" type="ColorRect" parent="UI"]
+process_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.05, 0, 0, 0.85)
+visible = false
+
+[node name="DeathLabel" type="Label" parent="UI/DeathPanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.38
+anchor_right = 0.5
+anchor_bottom = 0.38
+offset_left = -250.0
+offset_top = -50.0
+offset_right = 250.0
+offset_bottom = 60.0
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_font_sizes/font_size = 32
+text = "被吞噬了..."
+
+[node name="DeathRestart" type="Button" parent="UI/DeathPanel"]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.55
+anchor_right = 0.5
+anchor_bottom = 0.55
+offset_left = -100.0
+offset_top = -25.0
+offset_right = 100.0
+offset_bottom = 25.0
+theme_override_font_sizes/font_size = 22
+text = "重新开始"
+
+[connection signal="area_entered" from="Player" to="Player" method="on_area_entered"]
+[connection signal="pressed" from="UI/WinPanel/RestartButton" to="." method="_on_restart"]
+[connection signal="pressed" from="UI/DeathPanel/DeathRestart" to="." method="_on_restart"]

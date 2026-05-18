@@ -1,97 +1,95 @@
 # Godot — Current Best Practices
 
-Last verified: 2026-02-12 | Engine: Godot 4.6
+Last verified: 2026-05-15 | Engine: Godot 4.6
 
 Practices that are **new or changed** since the model's training data (~4.3).
-This supplements (not replaces) the agent's built-in knowledge.
+Agents MUST follow these over any older patterns they may have learned.
 
-## GDScript (4.5+)
+---
 
-- **Variadic arguments**: Functions can accept arbitrary parameter counts
-  ```gdscript
-  func log_values(prefix: String, values: Variant...) -> void:
-      for v in values:
-          print(prefix, ": ", v)
-  ```
+## GDScript (4.5+ idioms)
 
-- **Abstract classes and methods**: Use `@abstract` to enforce inheritance
-  ```gdscript
-  @abstract
-  class_name BaseEnemy extends CharacterBody3D
+### Static Typing (ENFORCED in this project)
 
-  @abstract
-  func get_attack_pattern() -> Array[Attack]:
-      pass  # Subclasses MUST override
-  ```
+```gdscript
+# REQUIRED — fully typed
+var speed: float = 100.0
+var direction: Vector2 = Vector2.ZERO
 
-- **Script backtracing**: Detailed call stacks available even in Release builds
+func calculate_velocity(delta: float) -> Vector2:
+    return direction * speed * delta
 
-## Physics (4.6)
+# FORBIDDEN — untyped variables and functions
+var speed = 100.0
+func calculate_velocity(delta):
+    return direction * speed * delta
+```
 
-- **Jolt Physics is the default 3D engine** for new projects
-  - Better determinism and stability than GodotPhysics3D
-  - Some HingeJoint3D properties (`damp`) only work with GodotPhysics
-  - Switch: Project Settings → Physics → 3D → Physics Engine
-  - 2D physics unchanged (still Godot Physics 2D)
+### @abstract (4.5+)
 
-## Rendering (4.6)
+```gdscript
+@abstract
+class_name CelestialBody
+extends Area2D
+# Cannot be instantiated directly — must subclass
+```
 
-- **D3D12 is the default backend on Windows** (was Vulkan) — for better driver compatibility
-- **Glow now processes before tonemapping** with screen blending mode — existing glow setups may look different
-- **SSR overhauled** — significant improvement in realism, stability, and performance
-- **AgX tonemapper** — new white point and contrast controls
+### Typed Signals
 
-## Rendering (4.5)
+```gdscript
+signal health_changed(new_health: int, max_health: int)
+signal evolution_triggered(new_stage: int)
 
-- **Shader Baker**: Pre-compile shaders to eliminate startup hitching
-- **SMAA 1x**: New AA option — sharper than FXAA, cheaper than TAA
-- **Stencil buffer**: Available for advanced masking/portal effects
-- **Bent normal maps**: Directional occlusion in normal map textures
-- **Specular occlusion**: Ambient occlusion now affects reflections
+# Connect with typed callables
+health_changed.connect(_on_health_changed)
+```
 
-## Accessibility (4.5+)
+### StringName for Performance
 
-- **Screen reader support**: Control nodes integrate with accessibility tools via AccessKit
-- **Live translation preview**: Test GUI layouts in different languages directly in-editor
-- **FoldableContainer**: New accordion-style UI node for collapsible sections
-- **Recursive Control disable**: Disable mouse/focus interactions for entire node hierarchies with a single property
+```gdscript
+# Use StringName for frequent lookups (input actions, animation names)
+const ACTION_MOVE := &"move"
+const ANIM_IDLE := &"idle"
 
-## Animation (4.5+)
+if Input.is_action_pressed(ACTION_MOVE):
+    pass
+```
 
-- **BoneConstraint3D**: Bind bones to other bones with modifiers
-  - AimModifier3D, CopyTransformModifier3D, ConvertTransformModifier3D
+---
 
-## Animation (4.6)
+## 2D Rendering (Mobile)
 
-- **IK system fully restored**: Complete inverse kinematics reintroduced for 3D
-  - Available modifiers: CCDIK, FABRIK, Jacobian IK, Spline IK, TwoBoneIK
-  - Applied via `SkeletonModifier3D` nodes
+### Renderer Selection
 
-## Resources (4.5+)
+- Set `rendering/renderer/rendering_method` to `mobile` for mobile builds
+- Mobile renderer uses Forward+ with mobile-specific optimizations
+- Vulkan Mobile is the correct backend for iOS/Android
 
-- **`duplicate_deep()`**: Explicit deep duplication for nested resource trees
-  - Old `duplicate()` behavior retained for backward compatibility
-  - Use `duplicate_deep()` when you need per-instance copies of nested resources
+### Glow (4.6 rewrite)
 
-## Navigation (4.5+)
+```
+# 4.6 defaults — start here and adjust:
+glow_blend_mode = Screen (1)
+glow_intensity = 0.3
+# Mobile glow was completely rewritten — always test on device
+```
 
-- **Dedicated 2D navigation server**: No longer proxied through 3D NavigationServer
-  - Reduces export binary size for 2D-only games
+### Performance Tips
 
-## UI (4.6)
+- Use `CanvasGroup` to batch draw calls on complex node trees
+- `GPUParticles2D` preferred over `CPUParticles2D` on modern mobile GPUs
+- Set `CanvasItem.visibility_layer` to skip processing off-screen nodes
+- Use object pooling for frequently spawned/despawned nodes
 
-- **Dual-focus system**: Mouse/touch focus is now separate from keyboard/gamepad focus
-  - Visual feedback differs depending on input method
-  - Consider this when designing custom focus behavior
+### Texture Settings for Vector Art
 
-## Editor Workflow (4.6)
+```
+# Project Settings for crisp vector graphics:
+rendering/textures/canvas_textures/default_texture_filter = Linear
+rendering/textures/canvas_textures/default_texture_repeat = Disabled
+```
 
-- Flexible dock drag-and-drop with blue outline preview (including bottom panel)
-- Most panels support floating windows (except Debugger)
-- New keyboard shortcuts: Alt+O (Output), Alt+S (Shader)
-- Export variable auto-generation: drag resource from FileSystem into script editor
-- Live preview in Quick Open dialog when "Live Preview" enabled
-- New "Select Mode" (v key) prevents accidental transforms; old mode renamed "Transform Mode" (q key)
+---
 
 ## Tooling
 
@@ -100,8 +98,59 @@ This supplements (not replaces) the agent's built-in knowledge.
   Always use `rg --glob "*.gd"` (shell) or `glob: "*.gd"` (Grep tool) to filter GDScript files.
 
 ## Platform (4.5+)
+## Physics (2D)
 
-- **visionOS export**: First new platform since open-sourcing (windowed app mode)
-- **SDL3 gamepad driver**: Better cross-platform gamepad support
-- **Android**: Edge-to-edge display, camera feed access, 16KB page support (Android 15+)
-- **Linux**: Wayland subwindow support for multi-window capability
+### Area2D for Detection (our use case)
+
+```gdscript
+# Standard pattern for collision detection in 星噬:
+class_name GravityField
+extends Area2D
+
+func _ready() -> void:
+    body_entered.connect(_on_body_entered)
+    area_entered.connect(_on_area_entered)
+
+func _on_body_entered(body: Node2D) -> void:
+    if body is CelestialBody:
+        _process_collision(body)
+```
+
+### CollisionShape2D
+
+- Use `CircleShape2D` for celestial bodies (performance optimal for circles)
+- Update shape radius when body grows — don't recreate the shape
+
+---
+
+## Scene Organization
+
+### Node Naming
+
+- Root nodes: PascalCase matching scene file
+- Child nodes: PascalCase descriptive names
+- Signal connections: `_on_<node_name>_<signal_name>` pattern
+
+### Resource Management
+
+- Use `uid://` paths (4.4+ default from Inspector)
+- Unique node IDs are auto-generated in 4.6 — don't manually edit `.tscn` files
+- `load()` vs `preload()`: use `preload` for always-needed resources, `load` for conditional
+
+---
+
+## Mobile Export Checklist
+
+- Test on actual devices — emulator ≠ device for touch and performance
+- Set `display/window/handheld/orientation` in Project Settings
+- Minimum touch target: 44x44 dp (physical)
+- Handle notch/safe area via `DisplayServer.get_display_safe_area()`
+- Test battery drain — disable unnecessary processing when paused
+
+---
+
+## Navigation (if needed later)
+
+- Regions update asynchronously by default (4.5+)
+- `get_point_path()` returns empty array for disabled points (4.6)
+- Always check return value before using path data

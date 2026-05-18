@@ -1,70 +1,145 @@
 # Godot — Breaking Changes
 
-Last verified: 2026-02-12
+Last verified: 2026-05-15
 
 Changes between Godot versions, focused on post-LLM-cutoff changes (4.4+).
+Agents MUST check this before suggesting Godot API calls.
 
-## 4.5 → 4.6 (Jan 2026 — POST-CUTOFF, HIGH RISK)
+---
 
-| Subsystem | Change | Details |
-|-----------|--------|---------|
-| Physics | Jolt is now the DEFAULT 3D physics engine | New projects use Jolt automatically. Existing projects keep their setting. Some HingeJoint3D properties (like `damp`) only work with GodotPhysics. |
-| Rendering | Glow processes BEFORE tonemapping | Was after tonemapping. Scenes with glow will look different. Adjust intensity/blend in WorldEnvironment. |
-| Rendering | D3D12 default on Windows | Was Vulkan. For better driver compatibility. |
-| Rendering | AgX tonemapper new controls | White point and contrast parameters added. |
-| Core | Quaternion initializes to identity | Was zero. Unlikely to affect most code but technically breaking. |
-| UI | Dual-focus system | Mouse/touch focus now separate from keyboard/gamepad focus. Visual feedback differs by input method. |
-| Animation | IK system fully restored | CCDIK, FABRIK, Jacobian IK, Spline IK, TwoBoneIK via SkeletonModifier3D nodes. |
-| Editor | New "Modern" theme default | Grayscale replaces blue-tint. Restore: Editor Settings → Interface → Theme → Style: Classic |
-| Editor | "Select Mode" keybind changed | New "Select Mode" (v key) prevents accidental transforms. Old mode renamed "Transform Mode" (q key). |
-| 2D | TileMapLayer scene tile rotation | Scene tiles can now be rotated like atlas tiles. |
-| Localization | CSV plural form support | No longer requires Gettext for plurals. Context columns added. |
-| C# | Automatic string extraction | Translation strings auto-extracted from C# code. |
-| Plugins | New EditorDock class | Specialized container for plugin docks with layout control. |
+## Godot 4.4 (Mid 2025)
 
-## 4.4 → 4.5 (Late 2025 — POST-CUTOFF, HIGH RISK)
+### GDScript-Relevant Breaking Changes
 
-| Subsystem | Change | Details |
-|-----------|--------|---------|
-| GDScript | Variadic arguments added | Functions can accept `...` arbitrary params — new language feature |
-| GDScript | `@abstract` decorator | Abstract classes and methods now enforceable |
-| GDScript | Script backtracing | Detailed call stacks available even in Release builds |
-| Rendering | Stencil buffer support | New capability for advanced visual effects |
-| Rendering | SMAA 1x antialiasing | New post-processing AA option |
-| Rendering | Shader Baker | Pre-compiles shaders — reportedly 20x faster startup on some demos |
-| Rendering | Bent normal maps, specular occlusion | New material features |
-| Accessibility | Screen reader support | Control nodes work with accessibility tools via AccessKit |
-| Editor | Live translation preview | Test GUI layouts in different languages in-editor |
-| Physics | 3D interpolation rearchitected | Moved from RenderingServer to SceneTree. API unchanged but internals differ. |
-| Animation | BoneConstraint3D | New: AimModifier3D, CopyTransformModifier3D, ConvertTransformModifier3D |
-| Resources | `duplicate_deep()` added | New explicit method for deep duplication of nested resources |
-| Navigation | Dedicated 2D navigation server | No longer a proxy to 3D navigation; smaller export for 2D games |
-| UI | FoldableContainer node | New accordion-style container for collapsible UI sections |
-| UI | Recursive Control behavior | Disable mouse/focus interactions across entire node hierarchies |
-| Platform | visionOS export support | New platform target |
-| Platform | SDL3 gamepad driver | Delegated gamepad handling to SDL library |
-| Platform | Android 16KB page support | Required for Google Play targeting Android 15+ |
+| Area | Change | Action |
+|------|--------|--------|
+| OS | `read_string_from_stdin` gains required `buffer_size` param | Add argument |
+| GraphEdit | `frame_rect_changed` signal param `Vector2` → `Rect2` | Update callbacks |
+| RenderingDevice | `draw_list_begin` parameters removed/restructured | Update calls |
+| @export_file | Paths now stored as `uid://` from Inspector | Be aware of mixed paths |
+| Curve | Resource now enforces `min_value`/`max_value` range | Adjust if outside [0,1] |
 
-## 4.3 → 4.4 (Mid 2025 — NEAR CUTOFF, VERIFY)
+### FileAccess Return Types
 
-| Subsystem | Change | Details |
-|-----------|--------|---------|
-| Core | `FileAccess.store_*` return `bool` | Was `void`. Methods: `store_8`, `store_16`, `store_32`, `store_64`, `store_buffer`, `store_csv_line`, `store_double`, `store_float`, `store_half`, `store_line`, `store_pascal_string`, `store_real`, `store_string`, `store_var` |
-| Core | `OS.execute_with_pipe` | Added optional `blocking` parameter |
-| Core | `RegEx.compile/create_from_string` | Added optional `show_error` parameter |
-| Rendering | `RenderingDevice.draw_list_begin` | Many parameters removed; `breadcrumb` parameter added |
-| Rendering | Shader texture types | Parameter/return types changed from `Texture2D` to `Texture` |
-| Particles | `.restart()` method | Added optional `keep_seed` parameter (CPU/GPU 2D/3D) |
-| GUI | `RichTextLabel.push_meta` | Added optional `tooltip` parameter |
-| GUI | `GraphEdit.connect_node` | Added optional `keep_alive` parameter |
+All `store_*` methods now return `bool` (was `void`). GDScript compatible — return value can be ignored.
 
-## 4.2 → 4.3 (In Training Data — LOW RISK)
+### Shader Types
 
-| Subsystem | Change | Details |
-|-----------|--------|---------|
-| Animation | `Skeleton3D.add_bone` returns `int32` | Was `void` |
-| Animation | `bone_pose_updated` signal | Replaced by `skeleton_updated` |
-| TileMap | `TileMapLayer` replaces `TileMap` | One node per layer instead of multi-layer single node |
-| Navigation | `NavigationRegion2D` | Removed `avoidance_layers`, `constrain_avoidance` properties |
-| Editor | `EditorSceneFormatImporterFBX` | Renamed to `EditorSceneFormatImporterFBX2GLTF` |
-| Animation | AnimationMixer base class | AnimationPlayer and AnimationTree now extend AnimationMixer |
+- `Shader.get_default_texture_parameter` returns `Texture` (was `Texture2D`)
+- `Shader.set_default_texture_parameter` accepts `Texture` (was `Texture2D`)
+
+### Behavior Changes
+
+- Android sensors disabled by default — enable in Project Settings if needed
+- CSG nodes now require manifold meshes (switched to Manifold library)
+- Jolt Physics available as option (not yet default)
+
+---
+
+## Godot 4.5 (Late 2025)
+
+### Renamed Methods
+
+| Old API | New API | GDScript Compatible |
+|---------|---------|---------------------|
+| `JSONRPC.set_scope` | `JSONRPC.set_method` | NO |
+
+### Removed Methods
+
+| Method | Notes |
+|--------|-------|
+| `RenderingServer.instance_reset_physics_interpolation` | Removed entirely |
+| `RenderingServer.instance_set_interpolated` | Removed entirely |
+
+### RichTextLabel Breaking Changes
+
+| Method | Change |
+|--------|--------|
+| `add_image` | `size_in_percent` replaced by `width_in_percent` + `height_in_percent`; new `alt_text` param |
+| `update_image` | Same split as above |
+
+### Behavior Changes
+
+- **TileMapLayer**: `get_coords_for_body_rid()` returns different values (physics chunking default). Set `physics_quadrant_size = 1` for old behavior.
+- **Resource.duplicate(true)**: Only deep-duplicates internal resources now. Use `Resource.duplicate_deep(DEEP_DUPLICATE_ALL)` for old behavior.
+- **Navigation**: Regions update asynchronously by default. Toggle via `navigation/world/region_use_async_iterations`.
+- **ProjectSettings.add_property_info()**: Now warns on missing/invalid keys.
+
+### New Features (notable)
+
+- AccessKit integration for accessibility
+- Variadic arguments support
+- `@abstract` annotation for classes
+- Shader baker system
+- SMAA anti-aliasing option
+
+---
+
+## Godot 4.6 (January 2026)
+
+### Physics
+
+- **Default 3D engine is now Jolt** (was Godot Physics). Change under `physics/3d/physics_engine`.
+- 2D physics unchanged.
+
+### Rendering — Glow Rework (CRITICAL for visual games)
+
+| Property | Old Default | New Default |
+|----------|-------------|-------------|
+| `glow_blend_mode` | Soft Light (2) | Screen (1) |
+| `glow_intensity` | 0.8 | 0.3 |
+| `glow_levels/2` | 0.0 | 0.8 |
+| `glow_levels/3` | 1.0 | 0.4 |
+| `glow_levels/4` | 0.0 | 0.1 |
+| `glow_levels/5` | 1.0 | 0.0 |
+
+Screen blend mode is "significantly brighter." Mobile renderer glow completely rewritten — "will look significantly different."
+
+### Rendering — Other
+
+- **Default driver on Windows**: D3D12 (was Vulkan)
+- **Volumetric fog**: Appears brighter (more physically accurate blending)
+- `rendering/reflections/sky_reflections/roughness_layers`: 8 → 7
+
+### FileAccess
+
+- `get_as_text`: `skip_cr` parameter **removed**
+- `create_temp`: `mode_flags` type changed `int` → `FileAccess.ModeFlags`
+
+### AnimationPlayer (GDScript compatible)
+
+Properties changed from `String` to `StringName` (transparent in GDScript):
+- `assigned_animation`, `autoplay`, `current_animation`
+- `get_queue()` returns `StringName[]`
+
+### GUI Nodes
+
+- `Control.grab_focus()` gains `hide_focus` optional param
+- `PopupMenu.submenu_popup_delay`: 0.3 → 0.2
+
+### Networking
+
+- `StreamPeerTCP` methods moved to base class `StreamPeerSocket`
+- `TCPServer` methods moved to base class `SocketServer`
+
+### Navigation
+
+- `AStar2D.get_point_path` returns **empty path** for disabled/solid points (was partial path)
+- Same for `AStarGrid2D.get_id_path` and `get_point_path`
+
+### Scene Format
+
+- `load_steps` no longer written to `.tscn` files
+- Unique node IDs saved to scene files (large VCS diffs on first resave)
+- Both changes are backwards/forwards compatible
+
+---
+
+## Summary: What Matters for 星噬 (2D Mobile GDScript)
+
+1. **Glow rework (4.6)** — Heavy glow use planned. Start with 4.6 defaults.
+2. **AStar2D changes (4.6)** — Check empty return if using pathfinding.
+3. **TileMapLayer (4.5)** — If using tilemaps for backgrounds.
+4. **FileAccess.get_as_text (4.6)** — `skip_cr` removed.
+5. **Scene format (4.6)** — Large diffs on first resave, cosmetic only.
+6. **Mobile glow rewrite (4.6)** — Test on device, not just editor.
